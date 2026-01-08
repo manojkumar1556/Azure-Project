@@ -1,0 +1,174 @@
+{
+	"name": "incrementalpipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "lastload",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select * from WaterMarkTable",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DatabaseConnection",
+						"type": "DatasetReference",
+						"parameters": {
+							"table_name": "WaterMarkTable"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CurrentLoad",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select max(date_id) as max_date from sales_cars_data",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DatabaseConnection",
+						"type": "DatasetReference",
+						"parameters": {
+							"table_name": "sales_cars_data"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CopyDataToBronze",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "lastload",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "CurrentLoad",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from sales_cars_data where date_ID>'@{activity('lastload').output.value[0].last_load}' and date_ID<='@{activity('CurrentLoad').output.value[0].max_date}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DatabaseConnection",
+						"type": "DatasetReference",
+						"parameters": {
+							"table_name": "sales_cars_data"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "BronzeParquetFile",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "StoredProcedureToUpdateWaterMarkTable",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "CopyDataToBronze",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[UpdateWaterMarkTable]",
+					"storedProcedureParameters": {
+						"last_load": {
+							"value": {
+								"value": "@activity('CurrentLoad').output.value[0].max_date",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2026-01-06T16:22:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
