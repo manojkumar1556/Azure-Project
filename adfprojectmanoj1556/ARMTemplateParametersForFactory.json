@@ -1,0 +1,42 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adfprojectmanoj1556"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
+		"AzureSqlDatabase1_password": {
+			"value": ""
+		},
+		"DatabaseConnection_password": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://projectresourcecontainer.dfs.core.windows.net/"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"value": "projectdatabasemanoj1556.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"value": "projectmanojdatabase1556"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"value": "manojkumar1556"
+		},
+		"DatabaseConnection_properties_typeProperties_server": {
+			"value": "projectdatabasemanoj1556.database.windows.net"
+		},
+		"DatabaseConnection_properties_typeProperties_database": {
+			"value": "projectmanojdatabase1556"
+		},
+		"DatabaseConnection_properties_typeProperties_userName": {
+			"value": "manojkumar1556"
+		},
+		"HttpServer1_properties_typeProperties_url": {
+			"value": "https://raw.githubusercontent.com/"
+		}
+	}
+}
